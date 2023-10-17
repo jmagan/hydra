@@ -5,7 +5,7 @@ import Hydra.Prelude
 import Control.Monad.Class.MonadAsync (async)
 import Hydra.Cardano.Api (NetworkId (..), NetworkMagic (..))
 import Hydra.Network (Host, readHost)
-import Hydra.Painter (Pixel (..), paintPixel, withClient, withClientNoRetry)
+import Hydra.Painter (Pixel (..), paintPixel, vote, withClient, withClientNoRetry)
 import Network.HTTP.Types.Status (status200, status400, status404)
 import Network.Wai (
   Application,
@@ -80,6 +80,14 @@ httpApp networkId key host req send =
           -- \| spawn a connection in a new thread
           void $ async $ withClientNoRetry host $ \cnx ->
             paintPixel networkId key cnx Pixel{x, y, red, green, blue}
+          send $ responseLBS status200 corsHeaders "OK"
+        _ ->
+          send handleError
+    ("GET", "poll" : args) -> do
+      case traverse (readMay . toString) args of
+        Just [x] -> do
+          void $ async $ withClientNoRetry host $ \cnx ->
+            vote networkId key cnx x
           send $ responseLBS status200 corsHeaders "OK"
         _ ->
           send handleError
