@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Blockfrost, Lucid, Network } from "lucid-cardano"
+import cbor from 'cbor-web'
+
 interface Option {
   id: number
   text: string
