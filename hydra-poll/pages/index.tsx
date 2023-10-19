@@ -24,7 +24,6 @@ export default function Home() {
       </main>
 
       <footer className="footer">
-        <MeshBadge dark={true} />
       </footer>
     </div>
   );
