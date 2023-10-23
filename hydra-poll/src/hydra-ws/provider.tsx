@@ -1,14 +1,23 @@
 // SocketProvider.jsx
 
-import React, { useRef } from "react"
+import React, { useMemo, useRef } from "react"
 import { HydraSocketContext } from './context'
 
-const HydraSocketProvider: React.FC = ({ children }) => {
+type UserHydraSocketOptions = {
+    url: string
+}
+
+export const HydraSocketProvider = ({
+    children,
+    options: userOptions,
+}: React.PropsWithChildren<UserHydraSocketOptions>) => {
+    const options = useMemo(() => ({ ...userOptions }), [userOptions])
+
     // we use a ref to store the socket as it won't be updated frequently
     const socketRef = useRef<WebSocket | null>(null)
 
     const initializeWebSocket: () => WebSocket = () => {
-        const url = new URL(process.env.REACT_APP_HYDRA_NODE_URL)
+        const url = new URL(options.url)
         return new WebSocket(url)
     }
 
@@ -22,5 +31,3 @@ const HydraSocketProvider: React.FC = ({ children }) => {
         </HydraSocketContext.Provider>
     )
 }
-
-export default HydraSocketProvider

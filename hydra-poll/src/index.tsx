@@ -1,17 +1,35 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import './index.css'
 import App from './App'
 import reportWebVitals from './reportWebVitals'
-import HydraSocketProvider from "./hydra-ws/provider"
+import { HydraSocketProvider } from "./hydra-ws/provider"
+import { CardanoProvider } from "use-cardano"
+import './styles/index.css'
+
+const UseCardanoOptions = {
+  autoReconnect: false,
+  testnetNetwork: "Preprod",
+  allowedNetworks: ["Testnet", "Preprod"],
+  node: {
+    provider: "blockfrost",
+    projectId: process.env.REACT_APP_BLOCKFROST_PROJECT_ID_PREPROD
+  }
+}
+
+const UserHydraSocketOptions = {
+  url: process.env.REACT_APP_HYDRA_NODE_URL
+}
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 )
+
 root.render(
   <React.StrictMode>
-    <HydraSocketProvider>
-      <App />
+    <HydraSocketProvider options={UserHydraSocketOptions}>
+      <CardanoProvider options={UseCardanoOptions}>
+        <App />
+      </CardanoProvider>
     </HydraSocketProvider>
   </React.StrictMode>
 )

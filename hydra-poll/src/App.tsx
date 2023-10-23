@@ -3,10 +3,9 @@ import { HydraEvent, HydraEventType, TxValid } from './hydra-ws/events'
 import { useHydraEvent } from "./hydra-ws/hook"
 import { decode } from 'cbor-x/decode' 
 import { Buffer } from 'buffer' 
-import './App.css'
+import './styles/App.css'
 import HydraPoll from "./poll"
 import { Option } from "./model/state"
-
 
 const App: FC = () => {
   // const [state, setState] = useState(transitions.disconnected(options))

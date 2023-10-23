@@ -7,7 +7,7 @@ export const useHydraEvent = (emitEvent: (evt: HydraEvent) => void) => {
     const { socket } = useContext(HydraSocketContext)
 
     // Memoize emitEvent with useCallback
-    const memoizedEmitEvent = useCallback(emitEvent, []);
+    const memoizedEmitEvent = useCallback(emitEvent, [])
     
     // when the component, *which uses this hook* mounts, add listeners.
     useEffect(() => {
@@ -50,5 +50,4 @@ export const useHydraEvent = (emitEvent: (evt: HydraEvent) => void) => {
             }
         }
     }, [socket, memoizedEmitEvent])
-
 }
