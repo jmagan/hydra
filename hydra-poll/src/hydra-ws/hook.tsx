@@ -32,9 +32,9 @@ export const useHydraEvent = (emitEvent: (evt: HydraEvent) => void) => {
                 socket.close()
             }
         }
-    }, [])
+    }, [socket])
 
     useEffect(() => {
         event && emitEvent(event)
-    }, [event])
+    }, [event, emitEvent])
 }
