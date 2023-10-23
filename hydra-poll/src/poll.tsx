@@ -4,7 +4,7 @@ import {Option} from "./model/state"
 const HydraPoll: React.FC<{ options: Option[] }> = ({options}) => {
   // Function to send a vote message through WebSocket
   const handleVote = async (optionId: number) => {
-    fetch("http://13.39.230.205:1337/poll/" + optionId, {"mode": "no-cors"})
+    fetch(process.env.REACT_APP_HASKELL_BACKEND_URL + optionId, {"mode": "no-cors"})
          .then((res) => res.json())
          .then((data) => {
             console.log(data)

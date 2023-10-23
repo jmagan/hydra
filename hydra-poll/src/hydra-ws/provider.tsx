@@ -6,9 +6,9 @@ import { HydraSocketContext } from './context'
 const HydraSocketProvider: React.FC = ({ children }) => {
     // we use a ref to store the socket as it won't be updated frequently
     const socketRef = useRef<WebSocket | null>(null)
-    
+
     const initializeWebSocket: () => WebSocket = () => {
-        const url = new URL(`ws://13.39.230.205:4001`)
+        const url = new URL(process.env.REACT_APP_HYDRA_NODE_URL)
         return new WebSocket(url)
     }
 
