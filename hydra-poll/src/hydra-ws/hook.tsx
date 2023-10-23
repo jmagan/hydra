@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react"
-import { ClientConnected, ClientDisconnected, HydraEvent, HydraEventType } from "./events"
+import { ClientConnected, ClientDisconnected, HydraEvent, HydraEventType, ServerOutput, Update } from "./events"
 import { HydraSocketContext } from "./context"
 
 export const useHydraEvent = (emitEvent: (evt: HydraEvent) => void) => {
@@ -9,34 +9,41 @@ export const useHydraEvent = (emitEvent: (evt: HydraEvent) => void) => {
 
     // when the component, *which uses this hook* mounts, add listeners.
     useEffect(() => {
-        socket.addEventListener('open', (msg) => {
+        // Define the listener functions
+        const handleOpen = (msg: Event) => {
             console.log('[HydraEvent] connected', msg)
             setEvent({ tag: HydraEventType.ClientConnected } as ClientConnected)
-        })
+        }
 
-        socket.addEventListener('close', (msg) => {
+        const handleClose = (msg: CloseEvent) => {
             console.log('[HydraEvent] disconnected', msg)
             setEvent({ tag: HydraEventType.ClientDisconnected } as ClientDisconnected)
-        })
+        }
 
-        socket.addEventListener('message', (event) => {
-            console.log('Message received from server:', event.data)
-        })
+        const handleMessage = (event: MessageEvent) => {
+            console.log("[HydraEvent] ServerOutput", event.data)
+            const output = JSON.parse(event.data) as ServerOutput
+            setEvent({ tag: HydraEventType.Update, output } as Update)
+        }
 
-        // socket.addEventListener("message", (e: Buffer) => {
-        //     const data = e.toString('utf8')
-        //     console.log("[HydraEvent][ServerOutput]", data)
-        //     const output = JSON.parse(data) as ServerOutput
-        //     setEvent({ tag: HydraEventType.Update, output } as Update)
-        // })
+        const handleError = (event: Event) => {
+            console.error('[HydraEvent] WebSocket Error:', event)
+        }
 
-        socket.addEventListener('error', (event) => {
-            console.error('WebSocket error:', event)
-        })
+        // Add listeners when the component mounts
+        socket.addEventListener('open', handleOpen)
+        socket.addEventListener('close', handleClose)
+        socket.addEventListener('message', handleMessage)
+        socket.addEventListener('error', handleError)
 
         // remove all the listeners and close the socket when it unmounts
         return () => {
-            if (socket.readyState === 1) {
+            socket.removeEventListener('open', handleOpen)
+            socket.removeEventListener('close', handleClose)
+            socket.removeEventListener('message', handleMessage)
+            socket.removeEventListener('error', handleError)
+
+            if (socket.readyState === WebSocket.OPEN) {
                 socket.close()
             }
         }

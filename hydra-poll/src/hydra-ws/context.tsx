@@ -1,6 +1,5 @@
 
 import React from 'react'
-import WebSocket from 'ws'
 
 export interface HydraSocketService {
     socket: WebSocket
