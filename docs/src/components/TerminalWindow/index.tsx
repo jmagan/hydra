@@ -5,20 +5,20 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import React, {type ReactNode} from 'react';
-import CodeBlock from '@theme/CodeBlock';
-import styles from './styles.module.css';
+import React, {type ReactNode} from 'react'
+import CodeBlock from '@theme/CodeBlock'
+import styles from './styles.module.css'
 
 interface Props {
-  children: ReactNode;
-  minHeight: number;
+  children: ReactNode
+  minHeight: number
 }
 
 export default function TerminalWindow({
   children,
   minHeight
 }: Props): JSX.Element {
-  const content = (typeof children === 'string') ? (<CodeBlock>{children}</CodeBlock>) : children;
+  const content = (typeof children === 'string') ? (<CodeBlock>{children}</CodeBlock>) : children
   return (
     <div className={styles.terminalWindow} style={{minHeight}}>
       <div className={styles.terminalWindowHeader}>
@@ -30,5 +30,5 @@ export default function TerminalWindow({
       </div>
       <div className={styles.terminalWindowBody}>{content}</div>
     </div>
-  );
+  )
 }

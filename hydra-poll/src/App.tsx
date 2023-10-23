@@ -1,12 +1,10 @@
-import { FC, useState } from "react"
-import { HydraEvent, HydraEventType } from './hydra-ws/events'
+import { FC } from "react"
+import { HydraEvent } from './hydra-ws/events'
 import { useHydraEvent } from "./hydra-ws/hook"
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
-import HydraPoll from "./poll";
+import './App.css'
+import HydraPoll from "./poll"
 
-const App: FC<{}> = ({}) => {
+const App: FC = () => {
   // const [state, setState] = useState(transitions.disconnected(options))
 
   useHydraEvent((event: HydraEvent) => {
@@ -49,7 +47,7 @@ const App: FC<{}> = ({}) => {
       <footer className="footer">
       </footer>
     </div>
-  );
+  )
 }
 
 export default App

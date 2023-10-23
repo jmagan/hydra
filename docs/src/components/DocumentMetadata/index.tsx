@@ -2,7 +2,7 @@ import React from "react"
 import docsMetadataJson from "@site/static/docs-metadata.json"
 import moment from "moment"
 import useIsBrowser from '@docusaurus/useIsBrowser'
-import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext'
 
 interface Props { }
 
@@ -40,10 +40,10 @@ const renderTranslatedMetadata = ({
   const diffMs = moment(translationUpdatedAt).diff(sourceUpdatedAt)
   const outdated = diffMs < 0
   const maybeRenderWarning = outdated &&
-    (<b>(⚠️ Warning:&nbsp; {moment.duration(diffMs).humanize()} behind default language)</b>)
+    (<b>(⚠️ Warning:&nbsp {moment.duration(diffMs).humanize()} behind default language)</b>)
   return (
     <div style={style}>
-      Translation updated:&nbsp;
+      Translation updated:&nbsp
       <a href={link}>
         {moment(translationUpdatedAt).fromNow()}
         {maybeRenderWarning}
@@ -53,7 +53,7 @@ const renderTranslatedMetadata = ({
 }
 
 export default function DocumentMetadata({ }: Props): JSX.Element {
-  const context = useDocusaurusContext();
+  const context = useDocusaurusContext()
 
   const isBrowser = useIsBrowser()
 

@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
-import cbor from 'cbor-web'
+import React, { useState, useRef } from 'react'
 
 interface Option {
   id: number
@@ -15,18 +14,18 @@ const HydraPoll: React.FC = () => {
   ])
 
   // WebSocket connection using useRef
-  const ws = useRef<WebSocket | null>(null)
+  // const ws = useRef<WebSocket | null>(null)
 
   // Function to send a vote message through WebSocket
   const handleVote = async (optionId: number) => {
     fetch("http://localhost:1337/poll/" + optionId, {"mode": "no-cors"})
          .then((res) => res.json())
          .then((data) => {
-            console.log(data);
+            console.log(data)
          })
          .catch((err) => {
-            console.log(err.message);
-         });
+            console.log(err.message)
+         })
   }
 
   // useEffect(() => {
@@ -34,14 +33,14 @@ const HydraPoll: React.FC = () => {
 
   //   ws.current.addEventListener('message', (event) => {
 
-  //     const metadataLabel = 14;
-  //     let msg = JSON.parse(event.data);
+  //     const metadataLabel = 14
+  //     let msg = JSON.parse(event.data)
   //     if (msg.tag == "TxValid") {
 
   //     if (msg.transaction.auxiliaryData != null) {
-  //       console.log("Transaction has auxiliary data", msg.transaction.auxiliaryData);
-  //       const aux = cbor.decodeFirstSync(msg.transaction.auxiliaryData).value;
-  //       const voteOption = (aux.get(0) || aux.get(1)).get(metadataLabel);
+  //       console.log("Transaction has auxiliary data", msg.transaction.auxiliaryData)
+  //       const aux = cbor.decodeFirstSync(msg.transaction.auxiliaryData).value
+  //       const voteOption = (aux.get(0) || aux.get(1)).get(metadataLabel)
   //       updateVoteCount(voteOption)
   //     }
   //     }

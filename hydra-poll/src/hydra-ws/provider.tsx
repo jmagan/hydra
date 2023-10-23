@@ -4,7 +4,7 @@ import React, { useRef } from "react"
 import { HydraSocketContext } from './context'
 
 const HydraSocketProvider: React.FC = ({ children }) => {
-    const url = `ws://localhost:4001`
+    const url = new URL(`ws://localhost:4001?history=no`)
 
     // we use a ref to store the socket as it won't be updated frequently
     const socket = useRef(new WebSocket(url))
