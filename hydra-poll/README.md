@@ -1,35 +1,46 @@
-# Starter Next.js TypeScript
+# Getting Started with Create React App
 
-Start a new project on Next.js. This starter template consists of a connect wallet button and wallet integration.
-      
-## Getting Started
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-Start project locally using CLI:
+## Available Scripts
 
-```bash
-npx create-mesh-app starter-next-ts-template
-```
+In the project directory, you can run:
 
-Start your project on [Demeter](https://demeter.run/):
+### `npm start`
 
-[![Code in Cardano Workspace](https://demeter.run/code/badge.svg)](https://demeter.run/code?repository=https://github.com/MeshJS/starter-next-ts-template.git&template=typescript)
+Runs the app in the development mode.\
+Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+
+The page will reload if you make edits.\
+You will also see any lint errors in the console.
+
+### `npm test`
+
+Launches the test runner in the interactive watch mode.\
+See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+
+### `npm run build`
+
+Builds the app for production to the `build` folder.\
+It correctly bundles React in production mode and optimizes the build for the best performance.
+
+The build is minified and the filenames include the hashes.\
+Your app is ready to be deployed!
+
+See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+
+### `npm run eject`
+
+**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+
+If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+
+Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+
+You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
 
 ## Learn More
 
-### [React components and hooks](https://meshjs.dev/react)
+You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
-Frontend components for wallet connections, and useful React hooks to getting wallet states - Mesh provides everything you need to bring your Web3 user interface to life.
-
-### [APIs](https://meshjs.dev/apis)
-
-From wallet integrations to transaction builders, Mesh makes Web3 development easy with reliable, scalable, and well-engineered APIs & developer tools.
-
-### [Guides](https://meshjs.dev/guides)
-
-Whether you are new to web development or a seasoned blockchain full-stack developer, these guides will help you get started.
-
-## Connect with us
-
-Follow us on [Twitter](https://twitter.com/meshsdk) for updates.
-
-Join our [Discord](https://discord.gg/Z6AH9dahdH) for any questions and suggestions.
+To learn React, check out the [React documentation](https://reactjs.org/).
