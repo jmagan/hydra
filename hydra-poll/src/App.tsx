@@ -1,10 +1,10 @@
 import { FC, useState } from "react"
-import { HydraEvent, HydraEventType } from './hydra-ws/events'
+import { HydraEvent, HydraEventType, TxValid } from './hydra-ws/events'
 import { useHydraEvent } from "./hydra-ws/hook"
 import './App.css'
 import HydraPoll from "./poll"
 import cbor from 'cbor-web'
-import {Option} from "./model/state"
+import { Option } from "./model/state"
 
 
 const App: FC = () => {
@@ -36,17 +36,20 @@ const App: FC = () => {
         break
       case HydraEventType.Update:
         // setState(transitions.handleAppEvent(state, event.output))
-        // const metadataLabel = 14
-        // let msg = JSON.parse(event.data)
-        // if (msg.tag == "TxValid") {
-
-        //   if (msg.transaction.auxiliaryData != null) {
-        //     console.log("Transaction has auxiliary data", msg.transaction.auxiliaryData)
-        //     const aux = cbor.decodeFirstSync(msg.transaction.auxiliaryData).value
-        //     const voteOption = (aux.get(0) || aux.get(1)).get(metadataLabel)
-        //     updateVoteCount(voteOption)
-        //   }
-        // }
+        switch (event.output.tag) {
+          case "TxValid":
+            const txValid = event.output as TxValid
+            const metadataLabel = 14
+            if (txValid.transaction.auxiliaryData != null) {
+              console.log("Transaction has auxiliary data", txValid.transaction.auxiliaryData)
+              const aux = cbor.decodeFirstSync(txValid.transaction.auxiliaryData).value
+              const voteOption = (aux.get(0) || aux.get(1)).get(metadataLabel)
+              updateVoteCount(voteOption)
+            }
+            break
+          default:
+            break
+        }
         break
       default:
         break

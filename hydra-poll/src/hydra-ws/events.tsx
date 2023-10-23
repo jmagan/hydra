@@ -49,6 +49,14 @@ export interface RolledBack {
     // timestamp: Date
 }
 
+export interface TxValid {
+    tag: string
+    // headId: string
+    transaction: any
+    // seq: number
+    // timestamp: Date
+}
+
 export type ServerOutput =
     Greetings
     | PeerConnected
@@ -57,6 +65,7 @@ export type ServerOutput =
     | Committed
     | HeadIsAborted
     | RolledBack
+    | TxValid
 
 export interface ClientConnected { tag: HydraEventType.ClientConnected }
 export interface ClientDisconnected { tag: HydraEventType.ClientDisconnected }
