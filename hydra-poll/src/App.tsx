@@ -45,7 +45,6 @@ const App: FC = () => {
             if (txValid.transaction.auxiliaryData != null) {
               const aux = decode(Buffer.from(txValid.transaction.auxiliaryData, 'hex'))
               const voteOption = aux.get(0)[metadataLabel]
-      //        console.log(voteOption);
               updateVoteCount(voteOption)
             }
             break

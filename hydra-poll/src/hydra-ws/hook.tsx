@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react"
+import { useCallback, useContext, useEffect } from "react"
 import { ClientConnected, ClientDisconnected, HydraEvent, HydraEventType, ServerOutput, Update } from "./events"
 import { HydraSocketContext } from "./context"
 
@@ -6,23 +6,26 @@ export const useHydraEvent = (emitEvent: (evt: HydraEvent) => void) => {
     // get the socket instance
     const { socket } = useContext(HydraSocketContext)
 
+    // Memoize emitEvent with useCallback
+    const memoizedEmitEvent = useCallback(emitEvent, []);
+    
     // when the component, *which uses this hook* mounts, add listeners.
     useEffect(() => {
         // Define the listener functions
         const handleOpen = (msg: Event) => {
             // console.log('[HydraEvent] connected', msg)
-            emitEvent({ tag: HydraEventType.ClientConnected } as ClientConnected)
+            memoizedEmitEvent({ tag: HydraEventType.ClientConnected } as ClientConnected)
         }
 
         const handleClose = (msg: CloseEvent) => {
             // console.log('[HydraEvent] disconnected', msg)
-            emitEvent({ tag: HydraEventType.ClientDisconnected } as ClientDisconnected)
+            memoizedEmitEvent({ tag: HydraEventType.ClientDisconnected } as ClientDisconnected)
         }
 
         const handleMessage = (event: MessageEvent) => {
             // console.log("[HydraEvent] ServerOutput", event.data)
             const output = JSON.parse(event.data) as ServerOutput
-            emitEvent({ tag: HydraEventType.Update, output } as Update)
+            memoizedEmitEvent({ tag: HydraEventType.Update, output } as Update)
         }
 
         const handleError = (event: Event) => {
@@ -46,6 +49,6 @@ export const useHydraEvent = (emitEvent: (evt: HydraEvent) => void) => {
                 socket.close()
             }
         }
-    }, [socket])
+    }, [socket, memoizedEmitEvent])
 
 }
