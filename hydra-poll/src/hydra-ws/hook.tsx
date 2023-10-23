@@ -9,17 +9,17 @@ export const useHydraEvent = (emitEvent: (evt: HydraEvent) => void) => {
 
     // when the component, *which uses this hook* mounts, add listeners.
     useEffect(() => {
-        socket.on('open', () => {
+        socket.addEventListener('open', () => {
             console.log('[HydraEvent] connected')
             setEvent({ tag: HydraEventType.ClientConnected } as ClientConnected)
         })
 
-        socket.on('close', () => {
+        socket.addEventListener('close', () => {
             console.log('[HydraEvent] disconnected')
             setEvent({ tag: HydraEventType.ClientDisconnected } as ClientDisconnected)
         })
 
-        socket.on("message", (e: Buffer) => {
+        socket.addEventListener("message", (e: Buffer) => {
             const data = e.toString('utf8')
             console.log("[HydraEvent][ServerOutput]", data)
             const output = JSON.parse(data) as ServerOutput

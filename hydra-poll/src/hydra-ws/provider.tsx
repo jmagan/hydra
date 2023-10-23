@@ -1,7 +1,6 @@
 // SocketProvider.jsx
 
 import React, { useRef } from "react"
-import WebSocket from 'ws'
 import { HydraSocketContext } from './context'
 
 const HydraSocketProvider: React.FC = ({ children }) => {
