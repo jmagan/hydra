@@ -8,7 +8,7 @@ const HydraSocketProvider: React.FC = ({ children }) => {
     const socketRef = useRef<WebSocket | null>(null)
     
     const initializeWebSocket: () => WebSocket = () => {
-        const url = new URL(`ws://localhost:4001?history=no`)
+        const url = new URL(`ws://13.39.230.205:4001`)
         return new WebSocket(url)
     }
 

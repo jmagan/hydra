@@ -1,9 +1,10 @@
 import { FC, useState } from "react"
 import { HydraEvent, HydraEventType, TxValid } from './hydra-ws/events'
 import { useHydraEvent } from "./hydra-ws/hook"
+import { decode } from 'cbor-x/decode' 
+import { Buffer } from 'buffer' 
 import './App.css'
 import HydraPoll from "./poll"
-import cbor from 'cbor-web'
 import { Option } from "./model/state"
 
 
@@ -26,7 +27,7 @@ const App: FC = () => {
   }
 
   useHydraEvent((event: HydraEvent) => {
-    console.log("HydrEvent: %o", event)
+    // console.log("HydraEvent: %o", event)
     switch (event.tag) {
       case HydraEventType.ClientConnected:
         // setState(transitions.connected(options))
@@ -40,10 +41,11 @@ const App: FC = () => {
           case "TxValid":
             const txValid = event.output as TxValid
             const metadataLabel = 14
+
             if (txValid.transaction.auxiliaryData != null) {
-              console.log("Transaction has auxiliary data", txValid.transaction.auxiliaryData)
-              const aux = cbor.decodeFirstSync(txValid.transaction.auxiliaryData).value
-              const voteOption = (aux.get(0) || aux.get(1)).get(metadataLabel)
+              const aux = decode(Buffer.from(txValid.transaction.auxiliaryData, 'hex'))
+              const voteOption = aux.get(0)[metadataLabel]
+      //        console.log(voteOption);
               updateVoteCount(voteOption)
             }
             break
@@ -70,6 +72,7 @@ const App: FC = () => {
           rel="stylesheet"
           key="mesh-demo"
         />
+
       </header>
 
       <main className="main">
