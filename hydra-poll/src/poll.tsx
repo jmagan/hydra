@@ -16,10 +16,9 @@ const HydraPoll: React.FC<{ options: Option[] }> = ({ options }) => {
         .attachMetadata(14, { msg: voteOption })
         .complete()
       const signedTx = await tx.sign().complete()
-      const txHash = await signedTx.submit()
-      // console.log(txHash)
+      console.log("txHash: ", await signedTx.submit())
       const messageToSend = JSON.stringify({ "tag": "NewTx", "transaction": signedTx.toString() })
-      // console.log(messageToSend)
+      console.log(messageToSend)
       socket.send(messageToSend)
     } else {
       console.error("Cant build tx due to missing Lucid instance")

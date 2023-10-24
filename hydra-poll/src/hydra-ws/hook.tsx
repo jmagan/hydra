@@ -23,7 +23,7 @@ export const useHydraEvent = (emitEvent: (evt: HydraEvent) => void) => {
         }
 
         const handleMessage = (event: MessageEvent) => {
-            // console.log("[HydraEvent] ServerOutput", event.data)
+            console.log("[HydraEvent] ServerOutput", event.data)
             const output = JSON.parse(event.data) as ServerOutput
             memoizedEmitEvent({ tag: HydraEventType.Update, output } as Update)
         }
