@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client'
 import App from './components/App'
 import reportWebVitals from './reportWebVitals'
 import { HydraSocketProvider } from "./hydra-ws/provider"
-import { CardanoProvider } from "use-cardano"
 import './styles/index.css'
 
 const UseCardanoOptions = {
@@ -27,9 +26,7 @@ const root = ReactDOM.createRoot(
 root.render(
   <React.StrictMode>
     <HydraSocketProvider options={UserHydraSocketOptions}>
-      <CardanoProvider options={UseCardanoOptions}>
-        <App />
-      </CardanoProvider>
+      <App />
     </HydraSocketProvider>
   </React.StrictMode>
 )
