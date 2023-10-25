@@ -1,11 +1,10 @@
 import { FC, useState } from "react"
-import { HydraEvent, HydraEventType, TxValid } from './hydra-ws/events'
-import { useHydraEvent } from "./hydra-ws/hook"
+import { HydraEvent, HydraEventType, TxValid } from '../hydra-ws/events'
+import { useHydraEvent } from "../hydra-ws/hook"
 import { decode } from 'cbor-x/decode' 
 import { Buffer } from 'buffer' 
-import './styles/App.css'
-import HydraPoll from "./poll"
-import { Option } from "./model/state"
+import HydraPoll from "./HydraPoll"
+import { Option } from "../model/state"
 
 const App: FC = () => {
   // const [state, setState] = useState(transitions.disconnected(options))
@@ -57,20 +56,10 @@ const App: FC = () => {
   })
 
   return (
-    <div className="App">
-      <header className="App-header">
+    <div className="container">
+      <header className="title">
         <title>Hydra Poll</title>
         <meta name="description" content="Poll running on Hydra Head protocol" />
-        <link
-          rel="icon"
-          href="https://meshjs.dev/favicon/favicon-32x32.png"
-        />
-        <link
-          href="https://meshjs.dev/css/template.css"
-          rel="stylesheet"
-          key="mesh-demo"
-        />
-
       </header>
 
       <main className="main">

@@ -1,13 +1,12 @@
 import React, { useContext } from 'react'
-import { Option } from "./model/state"
+import { Option } from "../model/state"
 import { useCardano, CardanoWalletSelector, CardanoToaster } from "use-cardano"
-import "use-cardano/styles/use-cardano.css"
-import { HydraSocketContext } from './hydra-ws/context'
+import { HydraSocketContext } from '../hydra-ws/context'
 
 const HydraPoll: React.FC<{ options: Option[] }> = ({ options }) => {
   const { account, lucid } = useCardano()
   const { socket } = useContext(HydraSocketContext)
-  
+
   // Function to send a vote message through WebSocket
   const handleVote = async function (voteOption: number) {
     if (lucid) {
@@ -27,29 +26,27 @@ const HydraPoll: React.FC<{ options: Option[] }> = ({ options }) => {
 
   return (
     <div>
-      <CardanoWalletSelector />
-      <div>Connected Address: {account.address || 'No wallet connected.'}</div>
-      <br />
-      <div className="hydra-poll">
+      <div>
         <h1 className="title">
           <a href="https://hydra.family">Hydra </a>Poll
         </h1>
         <h2>Vote for the next Hydra feature</h2>
-        <div className="options-container">
-          {options.map((option) => (
-            <div className="option" key={option.id}>
-              <div>
-                <h3>{option.text}</h3>
-                <h4>{option.votes}</h4>
-              </div>
-              <button onClick={() => handleVote(option.id)}>Vote</button>
-            </div>
-          ))}
-        </div>
+      </div>
+      <div>
+        <CardanoWalletSelector />
+        <div className="description">Connected Address: {account.address || 'No wallet connected.'}</div>
+      </div>
+      <div className="grid">
+        {options.map((option) => (
+          <div className="card" key={option.id}>
+            <h3>{option.text}</h3>
+            <h4>{option.votes}</h4>
+            <button className="button" onClick={() => handleVote(option.id)}>Vote</button>
+          </div>
+        ))}
       </div>
       <CardanoToaster />
     </div>
-
   )
 }
 
