@@ -29,7 +29,7 @@ import Hydra.Cardano.Api (
   getVerificationKey,
  )
 import Hydra.Cardano.Api qualified as Api
-import Hydra.Cluster.Fixture (KnownNetwork (..), toNetworkId)
+import Hydra.Cluster.Fixture (KnownNetwork (..), defaultNetworkId, toNetworkId)
 import Hydra.Cluster.Util (readConfigFile)
 import Network.HTTP.Simple (getResponseBody, httpBS, parseRequestThrow)
 import System.Directory (createDirectoryIfMissing, doesFileExist, removeFile)
@@ -152,6 +152,23 @@ findRunningCardanoNode tracer workDir knownNetwork = do
   socketPath = File $ workDir </> nodeSocket
 
   CardanoNodeArgs{nodeSocket} = defaultCardanoNodeArgs
+
+findRunningCardanoNodeDevnet :: Tracer IO NodeLog -> SocketPath -> IO (Maybe RunningNode)
+findRunningCardanoNodeDevnet tracer socketPath = do
+  try (queryGenesisParameters defaultNetworkId socketPath QueryTip) >>= \case
+    Left (e :: SomeException) ->
+      traceWith tracer MsgQueryGenesisParametersFailed{err = show e} $> Nothing
+    Right GenesisParameters{protocolParamActiveSlotsCoefficient, protocolParamSlotLength} ->
+      pure $
+        Just
+          RunningNode
+            { networkId = defaultNetworkId
+            , nodeSocket = socketPath
+            , blockTime =
+                computeBlockTime
+                  protocolParamSlotLength
+                  protocolParamActiveSlotsCoefficient
+            }
 
 -- | Start a single cardano-node devnet using the config from config/ and
 -- credentials from config/credentials/. Only the 'Faucet' actor will receive

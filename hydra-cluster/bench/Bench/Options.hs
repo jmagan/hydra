@@ -2,6 +2,8 @@ module Bench.Options where
 
 import Hydra.Prelude
 
+import Hydra.Cardano.Api (SocketPath)
+import Hydra.Options (nodeSocketParser)
 import Options.Applicative (
   Parser,
   ParserInfo,
@@ -34,12 +36,14 @@ data Options
       , timeoutSeconds :: NominalDiffTime
       , clusterSize :: Word64
       , startingNodeId :: Int
+      , nodeSocket :: Maybe SocketPath
       }
   | DatasetOptions
       { datasetFiles :: [FilePath]
       , outputDirectory :: Maybe FilePath
       , timeoutSeconds :: NominalDiffTime
       , startingNodeId :: Int
+      , nodeSocket :: Maybe SocketPath
       }
 
 benchOptionsParser :: ParserInfo Options
@@ -95,6 +99,7 @@ standaloneOptionsParser =
     <*> timeoutParser
     <*> clusterSizeParser
     <*> startingNodeIdParser
+    <*> optional nodeSocketParser
 
 item :: [Doc] -> Doc
 item items = line <> ("* " <+> align (fillSep items))
@@ -173,6 +178,7 @@ datasetOptionsParser =
     <*> optional outputDirectoryParser
     <*> timeoutParser
     <*> startingNodeIdParser
+    <*> optional nodeSocketParser
 
 filepathParser :: Parser FilePath
 filepathParser =

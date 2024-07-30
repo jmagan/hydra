@@ -44,8 +44,9 @@ prop_keepsUTxOConstant =
 
       let ledgerEnv = newLedgerEnv defaultPParams
       -- XXX: non-exhaustive pattern match
-      pure $
-        forAll (genDatasetConstantUTxO faucetSk 1 n) $
+      pure $ do
+        let clientKeys = generateWith arbitrary 42
+        forAll (genDatasetConstantUTxO faucetSk [clientKeys] n) $
           \Dataset{fundingTransaction, clientDatasets = [ClientDataset{txSequence}]} ->
             let initialUTxO = utxoFromTx fundingTransaction
                 finalUTxO = foldl' (apply defaultGlobals ledgerEnv) initialUTxO txSequence

@@ -9,7 +9,9 @@ import Bench.EndToEnd (bench)
 import Bench.Options (Options (..), benchOptionsParser)
 import Bench.Summary (Summary (..), markdownReport, textReport)
 import Data.Aeson (eitherDecodeFileStrict', encodeFile)
-import Hydra.Generator (Dataset (..), generateConstantUTxODataset)
+import Hydra.Cluster.Fixture (Actor (..))
+import Hydra.Cluster.Util (keysFor)
+import Hydra.Generator (ClientKeys (..), Dataset (..), generateConstantUTxODataset)
 import Options.Applicative (execParser)
 import System.Directory (createDirectoryIfMissing, doesDirectoryExist)
 import System.Environment (withArgs)
@@ -20,34 +22,52 @@ import Test.QuickCheck (generate, getSize, scale)
 main :: IO ()
 main =
   execParser benchOptionsParser >>= \case
-    StandaloneOptions{workDirectory = Just workDir, outputDirectory, timeoutSeconds, startingNodeId, scalingFactor, clusterSize} -> do
+    StandaloneOptions{workDirectory = Just workDir, outputDirectory, timeoutSeconds, startingNodeId, scalingFactor, clusterSize, nodeSocket} -> do
       -- XXX: This option is a bit weird as it allows to re-run a test by
       -- providing --work-directory, which is now redundant of the dataset
       -- sub-command.
       existsDir <- doesDirectoryExist workDir
       if existsDir
-        then replay outputDirectory timeoutSeconds startingNodeId workDir
-        else play outputDirectory timeoutSeconds scalingFactor clusterSize startingNodeId workDir
-    StandaloneOptions{workDirectory = Nothing, outputDirectory, timeoutSeconds, scalingFactor, clusterSize, startingNodeId} -> do
+        then replay nodeSocket outputDirectory timeoutSeconds startingNodeId workDir
+        else do
+          let nClients = fromIntegral clusterSize
+          let allClientKeys = replicate nClients (generateWith arbitrary 42)
+          play nodeSocket outputDirectory timeoutSeconds scalingFactor allClientKeys startingNodeId workDir
+    StandaloneOptions{workDirectory = Nothing, outputDirectory, timeoutSeconds, scalingFactor, clusterSize, startingNodeId, nodeSocket} -> do
       workDir <- createSystemTempDirectory "bench"
-      play outputDirectory timeoutSeconds scalingFactor clusterSize startingNodeId workDir
-    DatasetOptions{datasetFiles, outputDirectory, timeoutSeconds, startingNodeId} -> do
-      run outputDirectory timeoutSeconds startingNodeId datasetFiles
+      let nClients = fromIntegral clusterSize
+      allClientKeys <-
+        case nodeSocket of
+          Just _ -> do
+            aliceSk <- snd <$> keysFor Alice
+            aliceFundsSk <- snd <$> keysFor AliceFunds
+            bobSk <- snd <$> keysFor Bob
+            bobFundsSk <- snd <$> keysFor BobFunds
+            carolSk <- snd <$> keysFor Carol
+            carolFundsSk <- snd <$> keysFor CarolFunds
+            let alice = ClientKeys aliceSk aliceFundsSk
+                bob = ClientKeys bobSk bobFundsSk
+                carol = ClientKeys carolSk carolFundsSk
+            pure [alice, bob, carol]
+          Nothing -> return $ replicate nClients (generateWith arbitrary 42)
+      play nodeSocket outputDirectory timeoutSeconds scalingFactor allClientKeys startingNodeId workDir
+    DatasetOptions{datasetFiles, outputDirectory, timeoutSeconds, startingNodeId, nodeSocket} -> do
+      run nodeSocket outputDirectory timeoutSeconds startingNodeId datasetFiles
  where
-  play outputDirectory timeoutSeconds scalingFactor clusterSize startingNodeId workDir = do
+  play nodeSocket outputDirectory timeoutSeconds scalingFactor allClientKeys startingNodeId workDir = do
     putStrLn $ "Generating single dataset in work directory: " <> workDir
     numberOfTxs <- generate $ scale (* scalingFactor) getSize
-    dataset <- generateConstantUTxODataset (fromIntegral clusterSize) numberOfTxs
+    dataset <- generateConstantUTxODataset allClientKeys numberOfTxs
     let datasetPath = workDir </> "dataset.json"
     saveDataset datasetPath dataset
-    run outputDirectory timeoutSeconds startingNodeId [datasetPath]
+    run nodeSocket outputDirectory timeoutSeconds startingNodeId [datasetPath]
 
-  replay outputDirectory timeoutSeconds startingNodeId benchDir = do
+  replay nodeSocket outputDirectory timeoutSeconds startingNodeId benchDir = do
     let datasetPath = benchDir </> "dataset.json"
     putStrLn $ "Replaying single dataset from work directory: " <> datasetPath
-    run outputDirectory timeoutSeconds startingNodeId [datasetPath]
+    run nodeSocket outputDirectory timeoutSeconds startingNodeId [datasetPath]
 
-  run outputDirectory timeoutSeconds startingNodeId datasetFiles = do
+  run nodeSocket outputDirectory timeoutSeconds startingNodeId datasetFiles = do
     results <- forM datasetFiles $ \datasetPath -> do
       putTextLn $ "Running benchmark with dataset " <> show datasetPath
       dataset <- loadDataset datasetPath
@@ -55,7 +75,7 @@ main =
         withArgs [] $ do
           -- XXX: Wait between each bench run to give the OS time to cleanup resources??
           threadDelay 10
-          try @_ @HUnitFailure (bench startingNodeId timeoutSeconds dir dataset) >>= \case
+          try @_ @HUnitFailure (bench nodeSocket startingNodeId timeoutSeconds dir dataset) >>= \case
             Left exc -> pure $ Left (dataset, dir, TestFailed exc)
             Right summary@Summary{numberOfInvalidTxs}
               | numberOfInvalidTxs == 0 -> pure $ Right summary

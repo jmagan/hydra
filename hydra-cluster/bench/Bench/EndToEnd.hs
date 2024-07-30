@@ -7,7 +7,7 @@ import Test.Hydra.Prelude
 
 import Bench.Summary (Summary (..), makeQuantiles)
 import CardanoClient (RunningNode (..), awaitTransaction, submitTransaction, submitTx)
-import CardanoNode (withCardanoNodeDevnet)
+import CardanoNode (findRunningCardanoNodeDevnet, waitForFullySynchronized, withCardanoNodeDevnet)
 import Control.Concurrent.Class.MonadSTM (
   MonadSTM (readTVarIO),
   check,
@@ -28,9 +28,9 @@ import Data.Scientific (Scientific)
 import Data.Set ((\\))
 import Data.Set qualified as Set
 import Data.Time (UTCTime (UTCTime), utctDayTime)
-import Hydra.Cardano.Api (Tx, TxId, UTxO, getVerificationKey, signTx)
+import Hydra.Cardano.Api (SocketPath, Tx, TxId, UTxO, getVerificationKey, signTx)
 import Hydra.Cluster.Faucet (FaucetLog, publishHydraScriptsAs, seedFromFaucet)
-import Hydra.Cluster.Fixture (Actor (Faucet))
+import Hydra.Cluster.Fixture (Actor (..))
 import Hydra.Cluster.Scenarios (
   EndToEndLog (..),
   headIsInitializingWith,
@@ -52,6 +52,7 @@ import HydraNode (
   waitForAllMatch,
   waitForNodesConnected,
   waitMatch,
+  withConnectionToNode,
   withHydraCluster,
  )
 import System.Directory (findExecutable)
@@ -76,76 +77,93 @@ data Event = Event
   deriving stock (Generic, Eq, Show)
   deriving anyclass (ToJSON)
 
-bench :: Int -> NominalDiffTime -> FilePath -> Dataset -> IO Summary
-bench startingNodeId timeoutSeconds workDir dataset@Dataset{clientDatasets, title, description} = do
+bench :: Maybe SocketPath -> Int -> NominalDiffTime -> FilePath -> Dataset -> IO Summary
+bench mNodeSocket startingNodeId timeoutSeconds workDir dataset@Dataset{clientDatasets, title, description} = do
   putStrLn $ "Test logs available in: " <> (workDir </> "test.log")
   withFile (workDir </> "test.log") ReadWriteMode $ \hdl ->
     withTracerOutputTo hdl "Test" $ \tracer ->
       failAfter timeoutSeconds $ do
         putTextLn "Starting benchmark"
-        let cardanoKeys = map (\ClientDataset{clientKeys = ClientKeys{signingKey}} -> (getVerificationKey signingKey, signingKey)) clientDatasets
-        let hydraKeys = generateSigningKey . show <$> [1 .. toInteger (length cardanoKeys)]
-        let parties = Set.fromList (deriveParty <$> hydraKeys)
-        let clusterSize = fromIntegral $ length clientDatasets
-        withOSStats workDir $
-          withCardanoNodeDevnet (contramap FromCardanoNode tracer) workDir $ \node@RunningNode{nodeSocket} -> do
-            putTextLn "Seeding network"
-            let hydraTracer = contramap FromHydraNode tracer
-            hydraScriptsTxId <- seedNetwork node dataset (contramap FromFaucet tracer)
-            let contestationPeriod = UnsafeContestationPeriod 10
-            putStrLn $ "Starting hydra cluster in " <> workDir
-            withHydraCluster hydraTracer workDir nodeSocket startingNodeId cardanoKeys hydraKeys hydraScriptsTxId contestationPeriod $ \(leader :| followers) -> do
-              let clients = leader : followers
-              waitForNodesConnected hydraTracer 20 clients
+        withOSStats workDir $ do
+          let cardanoKeys = map (\ClientDataset{clientKeys = ClientKeys{signingKey}} -> (getVerificationKey signingKey, signingKey)) clientDatasets
+          let hydraKeys = generateSigningKey . show <$> [1 .. toInteger (length cardanoKeys)]
+          let parties = Set.fromList (deriveParty <$> hydraKeys)
+          let clusterSize = fromIntegral $ length clientDatasets
+          case mNodeSocket of
+            Just nodeSocket ->
+              findRunningCardanoNodeDevnet (contramap FromCardanoNode tracer) nodeSocket >>= \case
+                Nothing ->
+                  error ("Node not found at socket: " <> show nodeSocket)
+                Just node -> do
+                  let fromCardanoNode = contramap FromCardanoNode tracer
+                  waitForFullySynchronized fromCardanoNode node
+                  let hydraTracer = contramap FromHydraNode tracer
+                  putStrLn $ "Starting hydra cluster in " <> workDir
+                  (leader : followers) <- forM [1, 2, 3] (\i -> withConnectionToNode hydraTracer i pure)
+                  scenario hydraTracer node parties clusterSize leader followers
+            Nothing ->
+              withCardanoNodeDevnet (contramap FromCardanoNode tracer) workDir $ \node@RunningNode{nodeSocket} -> do
+                putTextLn "Seeding network"
+                let hydraTracer = contramap FromHydraNode tracer
+                hydraScriptsTxId <- seedNetwork node dataset (contramap FromFaucet tracer)
+                let contestationPeriod = UnsafeContestationPeriod 10
+                putStrLn $ "Starting hydra cluster in " <> workDir
+                withHydraCluster hydraTracer workDir nodeSocket startingNodeId cardanoKeys hydraKeys hydraScriptsTxId contestationPeriod $ \(leader :| followers) -> do
+                  scenario hydraTracer node parties clusterSize leader followers
+ where
+  -- REVIEW: args like `clusterSize`
+  scenario hydraTracer node parties clusterSize leader followers = do
+    let clients = leader : followers
+    waitForNodesConnected hydraTracer 20 clients
 
-              putTextLn "Initializing Head"
-              send leader $ input "Init" []
-              headId <-
-                waitForAllMatch (fromIntegral $ 10 * clusterSize) clients $
-                  headIsInitializingWith parties
+    putTextLn "Initializing Head"
+    send leader $ input "Init" []
+    headId <-
+      waitForAllMatch (fromIntegral $ 10 * clusterSize) clients $
+        headIsInitializingWith parties
 
-              putTextLn "Comitting initialUTxO from dataset"
-              expectedUTxO <- commitUTxO node clients dataset
+    putTextLn "Comitting initialUTxO from dataset"
+    expectedUTxO <- commitUTxO node clients dataset
 
-              waitFor hydraTracer (fromIntegral $ 10 * clusterSize) clients $
-                output "HeadIsOpen" ["utxo" .= expectedUTxO, "headId" .= headId]
+    waitFor hydraTracer (fromIntegral $ 10 * clusterSize) clients $
+      output "HeadIsOpen" ["utxo" .= expectedUTxO, "headId" .= headId]
 
-              putTextLn "HeadIsOpen"
-              processedTransactions <- processTransactions clients dataset
+    putTextLn "HeadIsOpen"
+    processedTransactions <- processTransactions clients dataset
 
-              putTextLn "Closing the Head"
-              send leader $ input "Close" []
+    putTextLn "Closing the Head"
+    send leader $ input "Close" []
 
-              deadline <- waitMatch 300 leader $ \v -> do
-                guard $ v ^? key "tag" == Just "HeadIsClosed"
-                guard $ v ^? key "headId" == Just (toJSON headId)
-                v ^? key "contestationDeadline" . _JSON
+    deadline <- waitMatch 300 leader $ \v -> do
+      guard $ v ^? key "tag" == Just "HeadIsClosed"
+      guard $ v ^? key "headId" == Just (toJSON headId)
+      v ^? key "contestationDeadline" . _JSON
 
-              -- Expect to see ReadyToFanout within 3 seconds after deadline
-              remainingTime <- diffUTCTime deadline <$> getCurrentTime
-              waitFor hydraTracer (remainingTime + 3) [leader] $
-                output "ReadyToFanout" ["headId" .= headId]
+    -- Expect to see ReadyToFanout within 3 seconds after deadline
+    remainingTime <- diffUTCTime deadline <$> getCurrentTime
+    waitFor hydraTracer (remainingTime + 3) [leader] $
+      output "ReadyToFanout" ["headId" .= headId]
 
-              putTextLn "Finalizing the Head"
-              send leader $ input "Fanout" []
-              waitMatch 100 leader $ \v -> do
-                guard (v ^? key "tag" == Just "HeadIsFinalized")
-                guard $ v ^? key "headId" == Just (toJSON headId)
+    putTextLn "Finalizing the Head"
+    send leader $ input "Fanout" []
+    waitMatch 100 leader $ \v -> do
+      guard (v ^? key "tag" == Just "HeadIsFinalized")
+      guard $ v ^? key "headId" == Just (toJSON headId)
 
-              let res = mapMaybe analyze . Map.toList $ processedTransactions
-                  aggregates = movingAverage res
+    let res = mapMaybe analyze . Map.toList $ processedTransactions
+        aggregates = movingAverage res
 
-              writeResultsCsv (workDir </> "results.csv") aggregates
+    writeResultsCsv (workDir </> "results.csv") aggregates
 
-              let confTimes = map (\(_, _, a) -> a) res
-                  numberOfTxs = length confTimes
-                  numberOfInvalidTxs = length $ Map.filter (isJust . invalidAt) processedTransactions
-                  averageConfirmationTime = sum confTimes / fromIntegral numberOfTxs
-                  quantiles = makeQuantiles confTimes
-                  summaryTitle = fromMaybe "Baseline Scenario" title
-                  summaryDescription = fromMaybe defaultDescription description
+    let confTimes = map (\(_, _, a) -> a) res
+        numberOfTxs = length confTimes
+        numberOfInvalidTxs = length $ Map.filter (isJust . invalidAt) processedTransactions
+        averageConfirmationTime = sum confTimes / fromIntegral numberOfTxs
+        quantiles = makeQuantiles confTimes
+        summaryTitle = fromMaybe "Baseline Scenario" title
+        summaryDescription = fromMaybe defaultDescription description
 
-              pure $ Summary{clusterSize, numberOfTxs, averageConfirmationTime, quantiles, summaryTitle, summaryDescription, numberOfInvalidTxs}
+    pure $ Summary{clusterSize, numberOfTxs, averageConfirmationTime, quantiles, summaryTitle, summaryDescription, numberOfInvalidTxs}
 
 defaultDescription :: Text
 defaultDescription = ""
