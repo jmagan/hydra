@@ -1,6 +1,7 @@
 services:
   cardano-node:
     image: ghcr.io/intersectmbo/cardano-node:9.1.0
+    platform: linux/amd64
     volumes:
       - ./devnet:/devnet
     environment:
@@ -22,6 +23,7 @@ services:
   hydra-node-1:
    # NOTE: Make sure to use the same image in ./seed-devnet.sh
     image: ghcr.io/cardano-scaling/hydra-node:unstable
+    platform: linux/amd64
     build:
       context: ../
       target: hydra-node
@@ -57,6 +59,7 @@ services:
   hydra-node-2:
     # NOTE: Make sure to use the same image in ./seed-devnet.sh
     image: ghcr.io/cardano-scaling/hydra-node:unstable
+    platform: linux/amd64
     build:
       context: ../
       target: hydra-node
@@ -92,6 +95,7 @@ services:
   hydra-node-3:
     # NOTE: Make sure to use the same image in ./seed-devnet.sh
     image: ghcr.io/cardano-scaling/hydra-node:unstable
+    platform: linux/amd64
     build:
       context: ../
       target: hydra-node
@@ -126,6 +130,7 @@ services:
 
   hydra-tui-1:
     image: ghcr.io/cardano-scaling/hydra-tui:0.17.0
+    platform: linux/amd64
     build:
        context: ../
        target: hydra-tui
@@ -143,6 +148,7 @@ services:
 
   hydra-tui-2:
     image: ghcr.io/cardano-scaling/hydra-tui:0.17.0
+    platform: linux/amd64
     build:
        context: ../
        target: hydra-tui
@@ -160,6 +166,7 @@ services:
 
   hydra-tui-3:
     image: ghcr.io/cardano-scaling/hydra-tui:0.17.0
+    platform: linux/amd64
     build:
        context: ../
        target: hydra-tui
@@ -177,6 +184,7 @@ services:
 
   prometheus:
     image: prom/prometheus:latest
+    platform: linux/amd64
     container_name: prometheus
     ports:
       - "9090:9090"

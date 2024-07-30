@@ -50,6 +50,7 @@ function hnode() {
   else
       docker run --rm -it \
         --pull always \
+        --platform linux/amd64 \
         -v ${SCRIPT_DIR}/devnet:/devnet \
         ghcr.io/cardano-scaling/hydra-node:unstable -- ${@}
   fi
