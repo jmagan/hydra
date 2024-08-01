@@ -64,7 +64,10 @@ function seedFaucet() {
 
     # Determine faucet address and just the **first** txin addressed to it
     FAUCET_ADDR=$(ccli address build --payment-verification-key-file ${DEVNET_DIR}/credentials/faucet.vk)
-    FAUCET_TXIN=$(ccli query utxo --address ${FAUCET_ADDR} --out-file /dev/stdout | jq -r 'keys[0]')
+    FAUCET_TXIN=$(
+      ccli query utxo --address ${FAUCET_ADDR} --out-file /dev/stdout --socket-path ${DEVNET_DIR}/node.socket \
+      | jq -r 'keys[0]'
+    )
 
     ACTOR_ADDR=$(ccli address build --payment-verification-key-file ${DEVNET_DIR}/credentials/${ACTOR}.vk)
 
@@ -72,18 +75,19 @@ function seedFaucet() {
         --change-address ${FAUCET_ADDR} \
         --tx-in ${FAUCET_TXIN} \
         --tx-out ${ACTOR_ADDR}+${AMOUNT} \
-        --out-file ${DEVNET_DIR}/seed-${ACTOR}.draft >&2
+        --out-file ${DEVNET_DIR}/seed-${ACTOR}.draft >&2 \
+        --socket-path ${DEVNET_DIR}/node.socket
     ccli transaction sign \
         --tx-body-file ${DEVNET_DIR}/seed-${ACTOR}.draft \
         --signing-key-file ${DEVNET_DIR}/credentials/faucet.sk \
         --out-file ${DEVNET_DIR}/seed-${ACTOR}.signed >&2
     SEED_TXID=$(ccli_ transaction txid --tx-file ${DEVNET_DIR}/seed-${ACTOR}.signed | tr -d '\r')
     SEED_TXIN="${SEED_TXID}#0"
-    ccli transaction submit --tx-file ${DEVNET_DIR}/seed-${ACTOR}.signed >&2
+    ccli transaction submit --tx-file ${DEVNET_DIR}/seed-${ACTOR}.signed --socket-path ${DEVNET_DIR}/node.socket >&2
 
     echo -n >&2 "Waiting for utxo ${SEED_TXIN}.."
 
-    while [[ "$(ccli query utxo --tx-in "${SEED_TXIN}" --out-file /dev/stdout | jq ".\"${SEED_TXIN}\"")" = "null" ]]; do
+    while [[ "$(ccli query utxo --tx-in "${SEED_TXIN}" --out-file /dev/stdout --socket-path ${DEVNET_DIR}/node.socket | jq ".\"${SEED_TXIN}\"")" = "null" ]]; do
         sleep 1
         echo -n >&2 "."
     done
