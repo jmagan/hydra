@@ -99,8 +99,11 @@ bench mNodeSocket startingNodeId timeoutSeconds workDir dataset@Dataset{clientDa
                   waitForFullySynchronized fromCardanoNode node
                   let hydraTracer = contramap FromHydraNode tracer
                   putStrLn $ "Starting hydra cluster in " <> workDir
-                  (leader : followers) <- forM [1, 2, 3] (\i -> withConnectionToNode hydraTracer i pure)
-                  scenario hydraTracer node parties clusterSize leader followers
+                  withConnectionToNode hydraTracer 1 $ \leader ->
+                    withConnectionToNode hydraTracer 2 $ \node2 ->
+                      withConnectionToNode hydraTracer 3 $ \node3 -> do
+                        let followers = [node2, node3]
+                        scenario hydraTracer node parties clusterSize leader followers
             Nothing ->
               withCardanoNodeDevnet (contramap FromCardanoNode tracer) workDir $ \node@RunningNode{nodeSocket} -> do
                 putTextLn "Seeding network"
