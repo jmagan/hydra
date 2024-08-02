@@ -5,14 +5,17 @@ import Hydra.Prelude hiding (size)
 
 import Cardano.Api.Ledger (PParams)
 import Cardano.Api.UTxO qualified as UTxO
-import CardanoClient (mkGenesisTx)
+import CardanoClient (QueryPoint (QueryTip), mkGenesisTx, queryUTxO)
 import Control.Monad (foldM)
 import Data.Aeson (object, withObject, (.:), (.=))
 import Data.Default (def)
+import Data.List qualified as List
 import Hydra.Cluster.Fixture (Actor (Faucet), availableInitialFunds)
 import Hydra.Cluster.Util (keysFor)
-import Hydra.Ledger.Cardano (genSigningKey, generateOneTransfer)
+import Hydra.Ledger (IsTx (balance))
+import Hydra.Ledger.Cardano (genSigningKey, generateOneTransfer, mkSimpleTx)
 import Test.QuickCheck (choose, generate, sized)
+import Test.QuickCheck.Monadic (run)
 
 networkId :: NetworkId
 networkId = Testnet $ NetworkMagic 42
@@ -76,6 +79,38 @@ data ClientDataset = ClientDataset
 
 defaultProtocolParameters :: PParams LedgerEra
 defaultProtocolParameters = def
+
+generateRealDataset ::
+  -- | Number of clients keys
+  [ClientKeys] ->
+  -- | Number of transactions
+  Int ->
+  IO Dataset
+generateRealDataset allClientKeys nTxs = do
+  clientDatasets <- forM allClientWithIds generateClientDataset'
+  pure Dataset{fundingTransaction = mempty, clientDatasets, title = Nothing, description = Nothing}
+ where
+  allClientWithIds = zip [1 ..] allClientKeys
+  generateClientDataset' (n, clientKeys@ClientKeys{signingKey}) = do
+    let vk = getVerificationKey signingKey
+    let (_, ClientKeys{signingKey = recipientSigningKey}) = List.head $ filter (\(n', _) -> n /= n') allClientWithIds
+    let recipientAddr = mkVkAddress networkId (getVerificationKey recipientSigningKey)
+    let recipientShelleyAddr = undefined
+    initialUTxO <- queryUTxO networkId (File "/home/v0d1ch/code/hydra/demo/devnet/node.socket") QueryTip [recipientShelleyAddr]
+    let x = foldl' generateTransfer' (initialUTxO, signingKey, recipientAddr, []) [1 .. nTxs]
+    let txSequence = reverse . fourth $ x
+    pure ClientDataset{clientKeys, initialUTxO, txSequence}
+
+  generateTransfer' (utxo, sender, recipient, txs) _ =
+    case UTxO.pairs utxo of
+      [txin] ->
+        case mkSimpleTx txin (recipient, balance @Tx utxo) sender of
+          Left e -> error $ "Tx construction failed: " <> show e <> ", utxo: " <> show utxo
+          Right tx ->
+            (utxoFromTx tx, sender, recipient, tx : txs)
+      _ ->
+        error "Couldn't generate transaction sequence: need exactly one UTXO."
+  fourth (_, _, _, c) = c
 
 -- | Generate 'Dataset' which does not grow the per-client UTXO set over time.
 -- The sequence of transactions generated consist only of simple payments from

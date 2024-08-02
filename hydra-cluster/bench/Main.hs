@@ -11,7 +11,7 @@ import Bench.Summary (Summary (..), markdownReport, textReport)
 import Data.Aeson (eitherDecodeFileStrict', encodeFile)
 import Hydra.Cluster.Fixture (Actor (..))
 import Hydra.Cluster.Util (keysFor)
-import Hydra.Generator (ClientKeys (..), Dataset (..), generateConstantUTxODataset)
+import Hydra.Generator (ClientKeys (..), Dataset (..), generateConstantUTxODataset, generateRealDataset)
 import Options.Applicative (execParser)
 import System.Directory (createDirectoryIfMissing, doesDirectoryExist)
 import System.Environment (withArgs)
@@ -57,7 +57,8 @@ main =
   play nodeSocket outputDirectory timeoutSeconds scalingFactor allClientKeys startingNodeId workDir = do
     putStrLn $ "Generating single dataset in work directory: " <> workDir
     numberOfTxs <- generate $ scale (* scalingFactor) getSize
-    dataset <- generateConstantUTxODataset allClientKeys numberOfTxs
+    dataset <- generateRealDataset allClientKeys numberOfTxs
+    -- dataset <- generateConstantUTxODataset allClientKeys numberOfTxs
     let datasetPath = workDir </> "dataset.json"
     saveDataset datasetPath dataset
     run nodeSocket outputDirectory timeoutSeconds startingNodeId [datasetPath]
