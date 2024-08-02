@@ -28,7 +28,8 @@ import Data.Scientific (Scientific)
 import Data.Set ((\\))
 import Data.Set qualified as Set
 import Data.Time (UTCTime (UTCTime), utctDayTime)
-import Hydra.Cardano.Api (SocketPath, Tx, TxId, UTxO, getVerificationKey, signTx)
+import Hydra.Cardano.Api (AsType (AsSigningKey), SocketPath, Tx, TxId, UTxO, getVerificationKey, signTx)
+import Hydra.Chain.Direct.Util (readFileTextEnvelopeThrow)
 import Hydra.Cluster.Faucet (FaucetLog, publishHydraScriptsAs, seedFromFaucet)
 import Hydra.Cluster.Fixture (Actor (..))
 import Hydra.Cluster.Scenarios (
@@ -36,7 +37,7 @@ import Hydra.Cluster.Scenarios (
   headIsInitializingWith,
  )
 import Hydra.ContestationPeriod (ContestationPeriod (UnsafeContestationPeriod))
-import Hydra.Crypto (generateSigningKey)
+import Hydra.Crypto (AsType (AsHydraKey), generateSigningKey)
 import Hydra.Generator (ClientDataset (..), ClientKeys (..), Dataset (..))
 import Hydra.Ledger (txId)
 import Hydra.Logging (Tracer, withTracerOutputTo)
@@ -86,7 +87,12 @@ bench mNodeSocket startingNodeId timeoutSeconds workDir dataset@Dataset{clientDa
         putTextLn "Starting benchmark"
         withOSStats workDir $ do
           let cardanoKeys = map (\ClientDataset{clientKeys = ClientKeys{signingKey}} -> (getVerificationKey signingKey, signingKey)) clientDatasets
-          let hydraKeys = generateSigningKey . show <$> [1 .. toInteger (length cardanoKeys)]
+          -- let hydraKeys = generateSigningKey . show <$> [1 .. toInteger (length cardanoKeys)]
+
+          hydraAliceSk <- readFileTextEnvelopeThrow (AsSigningKey AsHydraKey) "/home/v0d1ch/code/hydra/demo/alice.sk"
+          hydraBobSk <- readFileTextEnvelopeThrow (AsSigningKey AsHydraKey) "/home/v0d1ch/code/hydra/demo/bob.sk"
+          hydraCarolSk <- readFileTextEnvelopeThrow (AsSigningKey AsHydraKey) "/home/v0d1ch/code/hydra/demo/carol.sk"
+          let hydraKeys = [hydraAliceSk, hydraBobSk, hydraCarolSk]
           let parties = Set.fromList (deriveParty <$> hydraKeys)
           let clusterSize = fromIntegral $ length clientDatasets
           case mNodeSocket of
