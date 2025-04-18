@@ -350,11 +350,18 @@ waitForFullySynchronized tracer RunningNode{networkId, nodeSocket, blockTime} = 
   check systemStart
  where
   check systemStart = do
-    targetTime <- toRelativeTime systemStart <$> getCurrentTime
+    putStrLn $ "systemStart: " <> show systemStart
+    currentTime <- getCurrentTime
+    putStrLn $ "currentTime: " <> show currentTime
+    let targetTime = toRelativeTime systemStart currentTime
+    putStrLn $ "targetTime: " <> show targetTime
     eraHistory <- queryEraHistory networkId nodeSocket QueryTip
     tipSlotNo <- queryTipSlotNo networkId nodeSocket
+    putStrLn $ "tipSlotNo: " <> show tipSlotNo
     (tipTime, _slotLength) <- either throwIO pure $ getProgress tipSlotNo eraHistory
+    putStrLn $ "tipTime: " <> show tipTime
     let timeDifference = diffRelativeTime targetTime tipTime
+    putStrLn $ "timeDifference: " <> show timeDifference
     let percentDone = realToFrac (100.0 * getRelativeTime tipTime / getRelativeTime targetTime)
     traceWith tracer $ MsgSynchronizing{percentDone}
     if timeDifference < blockTime
