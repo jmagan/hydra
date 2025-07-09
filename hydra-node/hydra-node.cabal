@@ -246,32 +246,6 @@ executable hydra-node
 
   ghc-options:    -threaded -rtsopts -with-rtsopts=-N4
 
-benchmark tx-cost
-  import:         project-config
-  hs-source-dirs: bench/tx-cost
-  main-is:        Main.hs
-  other-modules:  TxCost
-  type:           exitcode-stdio-1.0
-  build-depends:
-    , base
-    , bytestring
-    , cardano-binary
-    , directory
-    , filepath
-    , hydra-cardano-api
-    , hydra-node
-    , hydra-plutus
-    , hydra-plutus-extras
-    , hydra-prelude
-    , hydra-tx
-    , hydra-tx:testlib
-    , optparse-applicative
-    , plutus-ledger-api
-    , plutus-tx
-    , QuickCheck
-
-  ghc-options:    -threaded -rtsopts
-
 benchmark micro
   import:         project-config
   hs-source-dirs: bench/micro-bench

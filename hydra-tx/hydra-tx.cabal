@@ -43,6 +43,7 @@ library
   hs-source-dirs:  src
   exposed-modules:
     Hydra.Chain.ChainState
+    Hydra.Chain.Direct.State
     Hydra.Ledger.Cardano.Builder
     Hydra.Ledger.Cardano.Evaluate
     Hydra.Ledger.Cardano.Time
@@ -224,3 +225,26 @@ executable hydra-tx
     , time
 
   ghc-options:    -threaded -rtsopts -with-rtsopts=-N4
+
+benchmark tx-cost
+  import:         project-config
+  hs-source-dirs: bench/tx-cost
+  main-is:        Main.hs
+  other-modules:  TxCost
+  type:           exitcode-stdio-1.0
+  build-depends:
+    , base
+    , bytestring
+    , cardano-binary
+    , directory
+    , filepath
+    , hydra-cardano-api
+    , hydra-plutus
+    , hydra-plutus-extras
+    , hydra-prelude
+    , hydra-tx
+    , hydra-tx:testlib
+    , optparse-applicative
+    , plutus-ledger-api
+    , plutus-tx
+    , QuickCheck

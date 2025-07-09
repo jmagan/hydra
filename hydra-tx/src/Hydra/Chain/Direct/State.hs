@@ -120,16 +120,6 @@ import Hydra.Tx.OnChainId (OnChainId)
 import Hydra.Tx.Recover (recoverTx)
 import Hydra.Tx.Snapshot (genConfirmedSnapshot)
 import Hydra.Tx.Utils (setIncrementalActionMaybe, splitUTxO, verificationKeyToOnChainId)
-import Test.Hydra.Tx.Fixture (testNetworkId)
-import Test.Hydra.Tx.Gen (
-  genOneUTxOFor,
-  genScriptRegistry,
-  genTxOut,
-  genUTxO1,
-  genUTxOAdaOnlyOfSize,
-  genVerificationKey,
- )
-import Test.QuickCheck (choose, chooseEnum, elements, frequency, oneof, suchThat, vector)
 
 -- | A class for accessing the known 'UTxO' set in a type. This is useful to get
 -- all the relevant UTxO for resolving transaction inputs.
