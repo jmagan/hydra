@@ -855,12 +855,19 @@ persistenceDirParser =
 persistenceRotateAfterParser :: Parser Natural
 persistenceRotateAfterParser =
   option
-    auto
+    (eitherReader validateRotateAfter)
     ( long "persistence-rotate-after"
         <> metavar "NATURAL"
         <> help
-          "The number of Hydra events to trigger rotation (default: no rotation)"
+          "The number of Hydra events to trigger rotation (default: no rotation).\
+          \Note it must be a positive number."
     )
+ where
+  validateRotateAfter :: String -> Either String Natural
+  validateRotateAfter arg =
+    case readMaybe arg of
+      Just n | n > 0 -> Right n
+      _ -> Left "--persistence-rotate-after must be a positive number"
 
 hydraNodeCommand :: ParserInfo Command
 hydraNodeCommand =
