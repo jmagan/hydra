@@ -52,7 +52,7 @@ mkFileBasedEventStore stateDir persistence = do
       let rotatedPath = stateDir <> "-" <> show nextLogId
       ( do
           renameFile stateDir rotatedPath
-          append persistence checkpointEvent
+          store checkpointEvent
         )
         `catch` \(_ :: SomeException) -> do
           -- Attempt to revert the rename,
