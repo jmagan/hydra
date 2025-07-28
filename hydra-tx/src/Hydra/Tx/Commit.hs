@@ -149,16 +149,42 @@ commitTx networkId scriptRegistry headId party commitBlueprintTx (initialInput, 
     txOutValue out <> maybe (UTxO.totalValue utxoToCommit) (fromLedgerValue . mkAdaValue ShelleyBasedEraConway) amount
 
   commitDatum =
-    mkTxOutDatumInline $ mkCommitDatum party utxoToCommit (headIdToCurrencySymbol headId)
+    mkTxOutDatumInline $ mkCommitDatum party utxoToCommit (headIdToCurrencySymbol headId) amount
 
   CommitBlueprintTx{lookupUTxO, blueprintTx} = commitBlueprintTx
 
-mkCommitDatum :: Party -> UTxO -> CurrencySymbol -> Plutus.Datum
-mkCommitDatum party utxo headId =
+mkCommitDatum :: Party -> UTxO -> CurrencySymbol -> Maybe Coin -> Plutus.Datum
+mkCommitDatum party utxo headId amount =
   Commit.datum (partyToChain party, commits, headId)
  where
   commits =
-    mapMaybe Commit.serializeCommit $ UTxO.toList utxo
+    mapMaybe Commit.serializeCommit $ UTxO.toList $ fromMaybe utxo utxoToSerialize
+
+  utxoToSerialize = do
+    amt <- amount
+    capUTxO utxo amt
+
+-- | Selects UTxO entries to cover a desired amount of lovelace.
+--
+-- Takes a UTxO set and a target amount (in lovelace) and returns a new UTxO set
+-- containing the minimum number of entries whose total value is at least the target
+-- amount. Entries are sorted in descending order of value to minimize the number of
+-- inputs. If the total value is less than the target or the UTxO is empty, returns Nothing.
+capUTxO :: UTxO.UTxO -> Coin -> Maybe UTxO.UTxO
+capUTxO utxo amount
+  | amount == 0 = Nothing
+  | UTxO.null utxo = Nothing
+  | UTxO.totalLovelace utxo < amount = Nothing
+  | otherwise = Just $ UTxO.fromList $ selectEnough [] 0 sortedEntries
+ where
+  sortedEntries = sortBy (comparing (Down . selectLovelace . txOutValue . snd)) (UTxO.toList utxo)
+  selectEnough acc accumulatedValue ((txIn, txOut) : rest)
+    | accumulatedValue >= amount = acc
+    | accumulatedValue' <- accumulatedValue + selectLovelace (txOutValue txOut)
+    , accumulatedValue' < amount =
+        selectEnough ((txIn, txOut) : acc) accumulatedValue' rest
+    | otherwise = [(txIn, txOut{txOutValue = fromLedgerValue $ mkAdaValue ShelleyBasedEraConway amount})]
+  selectEnough acc _ [] = acc
 
 -- * Observation
 
