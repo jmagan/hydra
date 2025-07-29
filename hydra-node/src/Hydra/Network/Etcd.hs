@@ -321,14 +321,21 @@ broadcastMessages ::
   IO ()
 broadcastMessages tracer conn ourHost queue =
   withGrpcContext "broadcastMessages" . forever $ do
+    traceWith tracer StartBroadcasting
     msg <- peekPersistentQueue queue
-    (putMessage conn ourHost msg >> popPersistentQueue queue msg)
-      `catch` \case
-        GrpcException{grpcError, grpcErrorMessage}
-          | grpcError == GrpcUnavailable || grpcError == GrpcDeadlineExceeded -> do
-              traceWith tracer $ BroadcastFailed{reason = fromMaybe "unknown" grpcErrorMessage}
-              threadDelay 1
-        e -> throwIO e
+    traceWith tracer $ PeekPersistentQueue
+    do 
+      traceWith tracer SendingMessageToEtcd
+      putMessage conn ourHost msg
+      traceWith tracer $ PopPersistentQueue
+      popPersistentQueue queue msg
+        `catch` \case
+          GrpcException{grpcError, grpcErrorMessage}
+            | grpcError == GrpcUnavailable || grpcError == GrpcDeadlineExceeded -> do
+                traceWith tracer $ BroadcastFailed{reason = fromMaybe "unknown" grpcErrorMessage}
+                threadDelay 1
+          e -> throwIO e
+    traceWith tracer FinishBroadcasting
 
 -- | Broadcast a message to the etcd cluster.
 putMessage ::
@@ -630,5 +637,11 @@ data EtcdLog
   | MatchingProtocolVersion {version :: ProtocolVersion}
   | WatchMessagesStartRevision {startRevision :: Int64}
   | WatchMessagesFallbackTo {compactRevision :: Int64}
+  | StartBroadcasting
+  | PeekPersistentQueue
+  | PopPersistentQueue
+  | SendingMessageToEtcd
+  | FinishBroadcasting
+
   deriving stock (Eq, Show, Generic)
   deriving anyclass (ToJSON)
