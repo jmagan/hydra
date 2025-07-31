@@ -84,7 +84,8 @@ import Network.GRPC.Client (
   ReconnectTo (ReconnectToOriginal),
   Server (..),
   rpc,
-  withConnection,
+  withConnection, Timeout (Timeout), TimeoutUnit(Second), TimeoutValue (TimeoutValue)
+
  )
 import Network.GRPC.Client.StreamType.IO (biDiStreaming, nonStreaming)
 import Network.GRPC.Common (GrpcError (..), GrpcException (..), HTTP2Settings (..), NextElem (..), def, defaultHTTP2Settings)
@@ -158,6 +159,7 @@ withEtcdNetwork tracer protocolVersion config callback action = do
       , -- NOTE: Not rate limit pings to our trusted, local etcd node. See
         -- comment on 'http2OverridePingRateLimit'.
         connHTTP2Settings = defaultHTTP2Settings{http2OverridePingRateLimit = Just maxBound}
+      , connDefaultTimeout = Just (Timeout Second (TimeoutValue 5))
       }
 
   reconnectPolicy doneVar = ReconnectAfter ReconnectToOriginal $ do
