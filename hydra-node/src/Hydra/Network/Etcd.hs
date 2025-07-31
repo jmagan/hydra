@@ -316,16 +316,12 @@ broadcastMessages ::
   IO ()
 broadcastMessages tracer conn ourHost queue =
   withGrpcContext "broadcastMessages" . forever $ do
-    traceWith tracer PeekPersistentQueue
     msg <- peekPersistentQueue queue
     do 
-      traceWith tracer SendingMessageToEtcd
       putMessage conn ourHost msg
-      traceWith tracer PopPersistentQueue
       handleExceptions $ do
         putMessage conn ourHost msg
         popPersistentQueue queue msg
-        traceWith tracer FinishBroadcasting
  where
   handleExceptions =
     flip
@@ -642,11 +638,6 @@ data EtcdLog
   | MatchingProtocolVersion {version :: ProtocolVersion}
   | WatchMessagesStartRevision {startRevision :: Int64}
   | WatchMessagesFallbackTo {compactRevision :: Int64}
-  | StartBroadcasting
-  | PeekPersistentQueue
-  | PopPersistentQueue
-  | SendingMessageToEtcd
-  | FinishBroadcasting
 
   deriving stock (Eq, Show, Generic)
   deriving anyclass (ToJSON)
